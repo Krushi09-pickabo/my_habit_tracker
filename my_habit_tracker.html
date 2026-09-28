@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Habit Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f4f0;min-width:900px}
+.app{padding:12px}
+
+/* HEADER */
+.header{background:#1e6b3a;border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.h-pct{color:#fff;font-size:26px;font-weight:700;min-width:70px}
+.h-title{color:#fff;font-size:20px;font-weight:600;flex:1;text-align:center}
+.h-nav{display:flex;gap:6px;align-items:center}
+.h-nav button{background:rgba(255,255,255,.2);border:none;color:#fff;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:13px;font-weight:600}
+.h-nav button:hover{background:rgba(255,255,255,.35)}
+.h-nav select,.h-nav input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:3px 6px;border-radius:5px;font-size:12px;outline:none;width:90px}
+.h-nav select option{background:#1e6b3a;color:#fff}
+
+.tip{background:#e8f5ec;color:#1e6b3a;font-size:11px;padding:6px 12px;border-radius:6px;margin-bottom:8px;border-left:4px solid #2d9651;font-weight:500}
+
+/* TABS */
+.tabs{display:flex;gap:6px;margin-bottom:8px}
+.tab{padding:6px 16px;border-radius:6px;border:none;background:#ddd;color:#555;cursor:pointer;font-size:12px;font-weight:600}
+.tab.on{background:#1e6b3a;color:#fff}
+
+.pane{display:none}.pane.on{display:block}
+
+/* GRID */
+.grid-wrap{overflow-x:auto;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+table{border-collapse:collapse;min-width:100%;background:#fff;border-radius:8px;overflow:hidden}
+thead th{background:#1e6b3a;color:#fff;padding:5px 3px;text-align:center;font-size:8px;font-weight:600;white-space:nowrap;position:sticky;top:0;z-index:5}
+thead th.h-name{text-align:left;padding-left:8px;min-width:150px;font-size:10px}
+thead th.h-goal{min-width:36px}
+thead th.h-we{background:#0d5030}
+.dow-row th{background:#c6efce;color:#1e6b3a;font-size:8px;padding:2px;font-weight:500}
+.dow-row th.h-we{background:#a8ddb5}
+
+/* HABIT ROWS */
+tr.h-row td{border-bottom:1px solid #eee}
+td.t-num{text-align:center;font-size:10px;font-weight:700;padding:0 4px;border-left:4px solid var(--hc)}
+td.t-name{padding:0 6px}
+td.t-name input{background:transparent;border:none;border-bottom:1px dashed #bbb;font-size:10px;font-weight:700;color:#222;width:140px;outline:none;padding:1px 0}
+td.t-goal{text-align:center;padding:0 2px}
+td.t-goal input{background:transparent;border:none;border-bottom:1px dashed #bbb;font-size:10px;color:#555;width:30px;text-align:center;outline:none}
+td.t-pct{text-align:right;padding-right:5px;font-size:10px;font-weight:700;min-width:38px}
+td.t-bar{padding:0 4px;min-width:90px}
+.bar-track{background:#e0e0e0;border-radius:3px;height:8px;width:85px;overflow:hidden}
+.bar-fill{height:8px;border-radius:3px;transition:width .3s}
+
+/* DAY CELLS */
+td.t-day{padding:1px;text-align:center}
+.day-btn{
+  width:24px;height:22px;border-radius:4px;
+  border:1.5px dashed #ccc;
+  background:#fafafa;
+  cursor:pointer;
+  font-size:13px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  margin:1px auto;
+  transition:all .12s;
+  user-select:none;
+  color:transparent;
+}
+.day-btn:hover{border-color:#888;background:#f0f0f0;transform:scale(1.1)}
+.day-btn.done{border-style:solid;color:#fff;transform:scale(1.05)}
+.day-btn.we{background:#f5f5f5;border-color:#ddd}
+.day-btn.we.done{opacity:.9}
+
+/* DAILY TOTAL */
+.total-row td{background:#c6efce;color:#1e6b3a;font-size:9px;font-weight:700;text-align:center;padding:4px 2px}
+.total-row td.lbl{text-align:right;padding-right:8px}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
+.kcard{background:#fff;border-radius:8px;padding:10px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.kv{font-size:18px;font-weight:700}
+.kl{font-size:9px;color:#888;margin-top:3px;line-height:1.3}
+
+/* CIRCLES */
+.circ-hdr{background:#1e6b3a;color:#fff;font-size:11px;font-weight:600;padding:7px 12px;border-radius:7px;margin:10px 0 7px}
+.circs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.ccard{border-radius:7px;overflow:hidden;border:1px solid #e0e0e0;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.ccard-name{font-size:9px;font-weight:700;padding:5px 4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccard-dots{font-size:14px;padding:4px 0;text-align:center;background:#fafafa}
+.ccard-pct{font-size:10px;font-weight:700;padding:4px 0;text-align:center;background:#fafafa}
+
+/* PANELS */
+.panels{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.panel{border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.panel-hdr{font-size:11px;font-weight:700;padding:8px 10px;color:#fff;text-align:center}
+.panel-row{display:flex;align-items:center;padding:5px 8px;border-top:1px solid #f0f0f0;font-size:11px;gap:5px;min-height:28px}
+.panel-row:nth-child(even){background:#fafafa}
+.panel-row input{background:transparent;border:none;border-bottom:1px dashed #ccc;color:#333;font-size:10px;outline:none;flex:1;min-width:0;font-family:Arial,sans-serif}
+.panel-row .chk{font-size:16px;cursor:pointer;user-select:none;flex-shrink:0;line-height:1}
+.wk-lbl{font-size:9px;font-weight:700;background:#1e6b3a;color:#fff;padding:2px 7px;border-radius:3px;flex-shrink:0}
+
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.s-hdr{font-size:11px;color:#888;font-weight:700;letter-spacing:.5px;margin-bottom:8px;text-transform:uppercase}
+.s-card{background:#fff;border:1px solid #e8e8e8;border-radius:8px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:9px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.s-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.s-info{flex:1;min-width:0}
+.s-name{font-size:10px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-sub{font-size:9px;color:#888;margin-top:2px}
+.s-right{text-align:right;flex-shrink:0}
+.s-val{font-size:16px;font-weight:700}
+.s-badge{font-size:9px;padding:2px 7px;border-radius:8px;font-weight:600;display:inline-block;margin-top:2px}
+.rec-box{background:#fff;border:1px solid #e8e8e8;border-radius:8px;padding:11px 13px;margin-bottom:9px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.rec-box h3{font-size:10px;color:#888;font-weight:700;letter-spacing:.5px;margin-bottom:7px;text-transform:uppercase}
+.rec-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:11px}
+.rec-row:last-child{border:none}
+.rec-l{color:#888}.rec-v{font-weight:700}
+table.stbl{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07);border-radius:7px;overflow:hidden}
+table.stbl th{background:#1e6b3a;color:#fff;padding:5px 7px;text-align:center;font-size:9px}
+table.stbl td{padding:4px 7px;border-bottom:1px solid #f0f0f0;text-align:center;background:#fff}
+.hmap{display:flex;flex-direction:column;gap:2px;overflow-x:auto;background:#fff;border-radius:8px;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.hm-row{display:flex;gap:2px;align-items:center}
+.hm-lbl{font-size:9px;color:#888;width:110px;text-align:right;padding-right:7px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.hm-dot{width:15px;height:15px;border-radius:3px;flex-shrink:0;border:1px solid #e0e0e0}
+
+/* SAVE INDICATOR */
+.save-bar{position:fixed;bottom:14px;right:14px;background:#1e6b3a;color:#fff;padding:8px 14px;border-radius:20px;font-size:11px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+.save-bar.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="h-pct" id="ovpct">0%</div>
+    <div class="h-title" id="h-title">June 2026</div>
+    <div class="h-nav">
+      <select id="sel-m" onchange="changeMonth()">
+        <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+        <option value="3">April</option><option value="4">May</option><option value="5" selected>June</option>
+        <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+        <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+      </select>
+      <input type="number" id="inp-y" value="2026" oninput="changeMonth()" style="width:68px">
+    </div>
+  </div>
+
+  <div class="tip">⚡ Click any day circle → green ✓ appears instantly and saves automatically to this browser. Your records stay even after closing!</div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="sw('tracker')">📅 Tracker</button>
+    <button class="tab" onclick="sw('stats')">📊 Stats &amp; Records</button>
+  </div>
+
+  <div class="pane on" id="p-tracker">
+    <div class="grid-wrap"><table id="grid"></table></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="circ-hdr">◉ Monthly Progress — fills automatically</div>
+    <div class="circs" id="circs"></div>
+    <div class="panels" id="panels"></div>
+  </div>
+
+  <div class="pane" id="p-stats">
+    <div class="stat-grid">
+      <div><div class="s-hdr">Per Habit Records</div><div id="hcards"></div></div>
+      <div><div class="s-hdr">Overall Records</div><div id="orecs"></div></div>
+    </div>
+    <div class="s-hdr">Summary Table</div>
+    <table class="stbl" id="stbl"></table>
+    <div class="s-hdr" style="margin-top:12px">Heat Map</div>
+    <div class="hmap" id="hmap"></div>
+  </div>
+</div>
+<div class="save-bar" id="savebar">✓ Saved!</div>
+
+<script>
+const HC=['#e84040','#ff7700','#9060ff','#4080ff','#00b890','#ff4da6','#cc44cc','#a0cc00','#00aacc','#1e6b3a'];
+const RB=['#fff0f0','#fff5e6','#f3eeff','#e8f0ff','#e6faf6','#fff0f8','#f8f0ff','#f4ffe6','#e6f8ff','#f0faf3'];
+const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOW=['S','M','T','W','T','F','S'];
+const BILL_PH=['Rent / mortgage','Electricity','Internet','Phone','Subscriptions','Groceries','Insurance','Gas','Dining out','Other'];
+const WK_LBL=['Week 1 (1–7)','Week 2 (8–14)','Week 3 (15–21)','Week 4 (22–31)'];
+const N=10;
+
+// ── Load from localStorage or use defaults ──────────────────────────────────
+function loadState(){
+  try{
+    const saved = localStorage.getItem('habitTracker_v5');
+    if(saved) return JSON.parse(saved);
+  }catch(e){}
+  return {
+    year:2026, month:5,
+    habits:[
+      {name:'50 Push Ups',     goal:25},
+      {name:'30 Pull Ups',     goal:25},
+      {name:'Habit 3',         goal:20},
+      {name:'Splitting',       goal:20},
+      {name:'Stretching',      goal:25},
+      {name:'400 Punches R/L', goal:25},
+      {name:'Kicks',           goal:20},
+      {name:'Dumbells',        goal:20},
+      {name:'Habit 9',         goal:15},
+      {name:'Situps 100',      goal:25}
+    ],
+    done:{},
+    wg: Array.from({length:16},()=>({txt:'',chk:false})),
+    bills: Array.from({length:10},()=>({name:'',amt:'',paid:false})),
+    evts: Array.from({length:12},()=>({dt:'',txt:'',done:false})),
+    notes: Array.from({length:12},()=>'')
+  };
+}
+
+let S = loadState();
+// sync UI selects
+document.getElementById('sel-m').value = S.month;
+document.getElementById('inp-y').value  = S.year;
+
+let saveTimer = null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    localStorage.setItem('habitTracker_v5', JSON.stringify(S));
+    const bar = document.getElementById('savebar');
+    bar.classList.add('show');
+    setTimeout(()=>bar.classList.remove('show'), 1800);
+  }, 300);
+}
+
+function key(h,d){return `${S.year}-${S.month}-${h}-${d}`}
+function isOn(h,d){return !!S.done[key(h,d)]}
+function getDays(){return new Date(S.year,S.month+1,0).getDate()}
+function getFirstDow(){return new Date(S.year,S.month,1).getDay()}
+function cntDone(h){let c=0,days=getDays();for(let d=1;d<=days;d++)if(isOn(h,d))c++;return c}
+function streak(h){let cur=0,mx=0,days=getDays();for(let d=1;d<=days;d++){if(isOn(h,d)){cur++;mx=Math.max(mx,cur)}else cur=0}return mx}
+function isWE(d){return ((getFirstDow()+d-1)%7)>=5}
+
+// ── CLICK HANDLER — instant visual + save ───────────────────────────────────
+function tap(h,d){
+  const k = key(h,d);
+  S.done[k] = !S.done[k];
+  const on  = S.done[k];
+  const hc  = HC[h];
+  const btn = document.getElementById(`b-${h}-${d}`);
+  if(btn){
+    btn.className = 'day-btn'+(on?' done':'')+(isWE(d)?' we':'');
+    btn.style.background   = on ? hc : '';
+    btn.style.borderColor  = on ? hc : '';
+    btn.textContent        = on ? '✓' : '';
+  }
+  recalcHabit(h);
+  updateCirc(h);
+  updateDailyTot(d);
+  updateKPIs();
+  save();
+}
+
+function recalcHabit(h){
+  const cnt=cntDone(h), pct=Math.round(cnt/Math.max(S.habits[h].goal,1)*100);
+  const ep=document.getElementById(`pct-${h}`), eb=document.getElementById(`bar-${h}`);
+  if(ep){ep.textContent=pct+'%'; ep.style.color=HC[h]}
+  if(eb){eb.style.width=Math.min(100,pct)+'%'; eb.style.background=HC[h]}
+}
+
+function updateDailyTot(d){
+  let tot=0; for(let h=0;h<N;h++) if(isOn(h,d)) tot++;
+  const el=document.getElementById(`dt-${d}`);
+  if(el) el.textContent = tot||'';
+}
+
+function updateCirc(h){
+  const cnt=cntDone(h), pct=Math.round(cnt/Math.max(S.habits[h].goal,1)*100);
+  const filled=Math.min(Math.round(pct/10),10);
+  const de=document.getElementById(`cd-${h}`), pe=document.getElementById(`cp-${h}`);
+  if(de) de.textContent='●'.repeat(filled)+'○'.repeat(10-filled);
+  if(pe) pe.textContent=pct+'% ('+cnt+'/'+S.habits[h].goal+')';
+}
+
+function updateKPIs(){
+  const days=getDays();
+  let td=0,tg=0,l7=0,best=0;
+  for(let h=0;h<N;h++){
+    const cnt=cntDone(h); td+=cnt; tg+=S.habits[h].goal;
+    for(let d=Math.max(1,days-6);d<=days;d++) if(isOn(h,d)) l7++;
+    best=Math.max(best,streak(h));
+  }
+  const sp  = tg?Math.round(td/tg*100):0;
+  const l7p = Math.round(l7/(N*7)*100);
+  const now = new Date();
+  const today=(now.getMonth()===S.month&&now.getFullYear()===S.year)?Math.min(now.getDate(),days):days;
+  const np  = tg&&today?Math.min(Math.round(td/(tg*(today/days))*100),100):0;
+  document.getElementById('ovpct').textContent = sp+'%';
+  document.getElementById('kpis').innerHTML=[
+    {v:sp+'%',   l:'Monthly Progress',   c:'#e84040'},
+    {v:np+'%',   l:'Normalized Progress',c:'#00aacc'},
+    {v:l7p+'%',  l:'Last 7 Days',        c:'#ff9000'},
+    {v:td+'/'+tg,l:'Total Completed',    c:'#1e6b3a'},
+    {v:best+'d', l:'Best Streak',        c:'#9060ff'}
+  ].map(k=>`<div class="kcard"><div class="kv" style="color:${k.c}">${k.v}</div><div class="kl">${k.l}</div></div>`).join('');
+}
+
+// ── BUILD FULL GRID ──────────────────────────────────────────────────────────
+function buildGrid(){
+  const days=getDays(), fd=getFirstDow();
+  document.getElementById('h-title').textContent = MN[S.month]+' '+S.year;
+
+  let h=`<thead><tr>
+    <th style="min-width:28px">#</th>
+    <th class="h-name">HABIT</th>
+    <th class="h-goal">GOAL</th>`;
+  for(let d=1;d<=days;d++){
+    const dow=(fd+d-1)%7, we=dow>=5;
+    h+=`<th class="${we?'h-we':''}"><div style="font-size:9px">${d}</div><div style="font-size:7px;opacity:.8">${DOW[dow]}</div></th>`;
+  }
+  h+=`<th style="min-width:42px;font-size:8px">%</th><th style="min-width:90px;font-size:8px">PROGRESS</th></tr></thead>`;
+
+  h+=`<tbody>`;
+  for(let hi=0;hi<N;hi++){
+    const hab=S.habits[hi], bg=RB[hi], hc=HC[hi];
+    h+=`<tr class="h-row" style="background:${bg};--hc:${hc}">`;
+    h+=`<td class="t-num" style="background:${bg}">${hi+1}</td>`;
+    h+=`<td class="t-name" style="background:${bg}">
+          <input value="${esc(hab.name)}" placeholder="Habit ${hi+1}"
+            oninput="S.habits[${hi}].name=this.value;updateCirc(${hi});save()">
+        </td>`;
+    h+=`<td class="t-goal" style="background:${bg}">
+          <input type="number" min="1" value="${hab.goal}"
+            oninput="S.habits[${hi}].goal=Math.max(1,parseInt(this.value)||1);recalcHabit(${hi});updateCirc(${hi});updateKPIs();save()">
+        </td>`;
+    for(let d=1;d<=days;d++){
+      const on=isOn(hi,d), we=((fd+d-1)%7)>=5;
+      h+=`<td class="t-day">
+            <div id="b-${hi}-${d}"
+              class="day-btn${on?' done':''}${we?' we':''}"
+              style="${on?`background:${hc};border-color:${hc}`:''}"
+              onclick="tap(${hi},${d})">${on?'✓':''}</div>
+          </td>`;
+    }
+    const cnt=cntDone(hi), pct=Math.round(cnt/Math.max(hab.goal,1)*100);
+    h+=`<td class="t-pct" id="pct-${hi}" style="color:${hc};background:${bg}">${pct}%</td>`;
+    h+=`<td class="t-bar" style="background:${bg}">
+          <div class="bar-track"><div class="bar-fill" id="bar-${hi}" style="width:${Math.min(100,pct)}%;background:${hc}"></div></div>
+        </td>`;
+    h+=`</tr>`;
+  }
+  // daily totals
+  h+=`<tr class="total-row"><td colspan="3" class="lbl">Daily total ▸</td>`;
+  for(let d=1;d<=days;d++){
+    let tot=0; for(let hi=0;hi<N;hi++) if(isOn(hi,d)) tot++;
+    h+=`<td id="dt-${d}">${tot||''}</td>`;
+  }
+  h+=`<td></td><td></td></tr></tbody>`;
+  document.getElementById('grid').innerHTML=h;
+}
+
+// ── CIRCLES ─────────────────────────────────────────────────────────────────
+function buildCircs(){
+  let h='';
+  for(let hi=0;hi<N;hi++){
+    const hab=S.habits[hi], cnt=cntDone(hi), pct=Math.round(cnt/Math.max(hab.goal,1)*100), hc=HC[hi];
+    const filled=Math.min(Math.round(pct/10),10);
+    h+=`<div class="ccard">
+      <div class="ccard-name" style="border-top:3px solid ${hc};color:${hc}">${hi+1}. ${esc(hab.name)}</div>
+      <div class="ccard-dots" id="cd-${hi}" style="color:${hc}">${'●'.repeat(filled)+'○'.repeat(10-filled)}</div>
+      <div class="ccard-pct" id="cp-${hi}" style="color:${hc}">${pct}% (${cnt}/${hab.goal})</div>
+    </div>`;
+  }
+  document.getElementById('circs').innerHTML=h;
+}
+
+// ── PANELS ───────────────────────────────────────────────────────────────────
+function buildPanels(){
+  document.getElementById('panels').innerHTML=`
+    <div class="panel"><div class="panel-hdr" style="background:#e8846a">✏️ Weekly Goals</div><div id="pp-wg"></div></div>
+    <div class="panel"><div class="panel-hdr" style="background:#5b9bd5">💳 Bills Checklist</div><div id="pp-bl"></div></div>
+    <div class="panel"><div class="panel-hdr" style="background:#9b59b6">📅 Important Events</div><div id="pp-ev"></div></div>
+    <div class="panel"><div class="panel-hdr" style="background:#1abc9c">📝 General Notes</div><div id="pp-gn"></div></div>`;
+  rWG();rBL();rEV();rGN();
+}
+
+function rWG(){
+  let h='';
+  for(let i=0;i<16;i++){
+    const w=Math.floor(i/4), wi=i%4, it=S.wg[i];
+    if(wi===0) h+=`<div class="panel-row" style="background:#e8846a;padding:4px 9px">
+      <span class="wk-lbl">${WK_LBL[w]}</span></div>`;
+    h+=`<div class="panel-row">
+      <span class="chk" style="color:#e8846a" onclick="S.wg[${i}].chk=!S.wg[${i}].chk;rWG();save()">${it.chk?'☑':'☐'}</span>
+      <input value="${esc(it.txt)}" placeholder="Add goal..." oninput="S.wg[${i}].txt=this.value;save()">
+    </div>`;
+  }
+  document.getElementById('pp-wg').innerHTML=h;
+}
+
+function rBL(){
+  let h=`<div class="panel-row" style="background:#5b9bd5;padding:3px 8px;font-size:9px;font-weight:700;color:#fff;gap:0">
+    <span style="flex:1">Expense</span><span style="width:56px;text-align:right">Amount</span><span style="width:24px;text-align:center">✓</span>
+  </div>`;
+  let tot=0;
+  for(let i=0;i<10;i++){
+    const b=S.bills[i];
+    if(b.paid&&b.amt) tot+=parseFloat(b.amt)||0;
+    h+=`<div class="panel-row">
+      <input value="${esc(b.name)}" placeholder="${BILL_PH[i]}" oninput="S.bills[${i}].name=this.value;save()" style="flex:1">
+      <input type="number" value="${esc(b.amt)}" placeholder="0" oninput="S.bills[${i}].amt=this.value;rBL();save()" style="width:56px;text-align:right;flex:0;font-size:10px">
+      <span class="chk" style="color:#1abc9c;width:24px;text-align:center" onclick="S.bills[${i}].paid=!S.bills[${i}].paid;rBL();save()">${b.paid?'✓':'□'}</span>
+    </div>`;
+  }
+  h+=`<div class="panel-row" style="background:#5b9bd5;color:#fff;font-size:11px;font-weight:700">
+    <span style="flex:1">Total paid</span><span>₹${Math.round(tot).toLocaleString()}</span>
+  </div>`;
+  document.getElementById('pp-bl').innerHTML=h;
+}
+
+function rEV(){
+  let h=`<div class="panel-row" style="background:#9b59b6;padding:3px 8px;font-size:9px;font-weight:700;color:#fff;gap:4px">
+    <span style="width:30px">Day</span><span style="flex:1">Event / Task</span><span style="width:20px;text-align:center">✓</span>
+  </div>`;
+  for(let i=0;i<12;i++){
+    const ev=S.evts[i];
+    h+=`<div class="panel-row" style="gap:4px">
+      <input value="${esc(ev.dt)}" placeholder="–" oninput="S.evts[${i}].dt=this.value;save()" style="width:30px;text-align:center;flex:0">
+      <input value="${esc(ev.txt)}" placeholder="Event..." oninput="S.evts[${i}].txt=this.value;save()">
+      <span class="chk" style="color:#1abc9c;width:20px;text-align:center" onclick="S.evts[${i}].done=!S.evts[${i}].done;rEV();save()">${ev.done?'✓':'□'}</span>
+    </div>`;
+  }
+  document.getElementById('pp-ev').innerHTML=h;
+}
+
+function rGN(){
+  let h='';
+  for(let i=0;i<12;i++){
+    h+=`<div class="panel-row">
+      <span style="color:#1abc9c;font-size:11px;flex-shrink:0;width:20px;font-weight:700">${i+1}.</span>
+      <input value="${esc(S.notes[i]||'')}" placeholder="Write a note..." oninput="S.notes[${i}]=this.value;save()">
+    </div>`;
+  }
+  document.getElementById('pp-gn').innerHTML=h;
+}
+
+// ── MONTH CHANGE ─────────────────────────────────────────────────────────────
+function changeMonth(){
+  S.year  = parseInt(document.getElementById('inp-y').value)||2026;
+  S.month = parseInt(document.getElementById('sel-m').value);
+  save();
+  buildGrid(); updateKPIs(); buildCircs();
+}
+
+// ── TAB SWITCH ───────────────────────────────────────────────────────────────
+function sw(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',['tracker','stats'][i]===t));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  document.getElementById('p-'+t).classList.add('on');
+  if(t==='stats') buildStats();
+}
+
+// ── STATS ────────────────────────────────────────────────────────────────────
+function buildStats(){
+  const days=getDays();
+  let cards='';
+  for(let hi=0;hi<N;hi++){
+    const hc=HC[hi], cnt=cntDone(hi), pct=Math.round(cnt/Math.max(S.habits[hi].goal,1)*100);
+    const str=streak(hi), rem=Math.max(S.habits[hi].goal-cnt,0);
+    const [stxt,sbg,sfc]=pct>=100?['✅ Complete','#d4edda','#155724']:pct>=75?['🔥 On Track','#fff3cd','#664d03']:pct>=40?['⚡ In Progress','#cce5ff','#084298']:['🌱 Starting','#f8d7da','#842029'];
+    cards+=`<div class="s-card">
+      <div class="s-dot" style="background:${hc}"></div>
+      <div class="s-info">
+        <div class="s-name" style="color:${hc}">${hi+1}. ${esc(S.habits[hi].name)}</div>
+        <div class="s-sub">${str}d streak &nbsp;·&nbsp; ${rem} left to goal</div>
+      </div>
+      <div class="s-right">
+        <div class="s-val" style="color:${hc}">${pct}%</div>
+        <span class="s-badge" style="background:${sbg};color:${sfc}">${stxt}</span>
+      </div>
+    </div>`;
+  }
+  document.getElementById('hcards').innerHTML=cards;
+
+  let td=0,tg=0,actD=0,bhi=-1,whi=-1,bp=-1,wp=101;
+  for(let d=1;d<=days;d++){let a=false;for(let h=0;h<N;h++)if(isOn(h,d)){a=true;break}if(a)actD++;}
+  for(let hi=0;hi<N;hi++){
+    const cnt=cntDone(hi),pct=cnt/Math.max(S.habits[hi].goal,1);
+    td+=cnt;tg+=S.habits[hi].goal;
+    if(pct>bp){bp=pct;bhi=hi}
+    if(pct<wp){wp=pct;whi=hi}
+  }
+  const sp=tg?Math.round(td/tg*100):0;
+  const bst=Math.max(0,...Array.from({length:N},(_,i)=>streak(i)));
+  const recs=[
+    ['Total checks done',td,'#1e6b3a'],
+    ['Monthly goal total',tg,'#888'],
+    ['Overall success rate',sp+'%','#e84040'],
+    ['Days with activity',actD+'/'+days,'#ff9000'],
+    ['Best habit',bhi>=0?S.habits[bhi].name:'—',HC[bhi]||'#aaa'],
+    ['Needs attention',whi>=0?S.habits[whi].name:'—','#e84040'],
+    ['Best streak overall',bst+'d','#9060ff']
+  ];
+  let rh='<div class="rec-box"><h3>Overall Records</h3>';
+  for(const[l,v,c] of recs) rh+=`<div class="rec-row"><span class="rec-l">${l}</span><span class="rec-v" style="color:${c}">${v}</span></div>`;
+  document.getElementById('orecs').innerHTML=rh+'</div>';
+
+  let tbl=`<thead><tr><th style="text-align:left"># Habit</th><th>Goal</th><th>Done</th><th>%</th><th>Streak</th><th>Left</th><th>Status</th></tr></thead><tbody>`;
+  for(let hi=0;hi<N;hi++){
+    const hc=HC[hi],cnt=cntDone(hi),pct=Math.round(cnt/Math.max(S.habits[hi].goal,1)*100),str=streak(hi);
+    const st=pct>=100?'✅':pct>=75?'🔥':pct>=40?'⚡':'🌱';
+    tbl+=`<tr>
+      <td style="text-align:left;color:${hc};font-weight:700">${hi+1}. ${esc(S.habits[hi].name)}</td>
+      <td>${S.habits[hi].goal}</td>
+      <td style="color:${hc};font-weight:700">${cnt}</td>
+      <td style="color:${hc};font-weight:700">${pct}%</td>
+      <td>${str}</td><td>${Math.max(S.habits[hi].goal-cnt,0)}</td><td>${st}</td>
+    </tr>`;
+  }
+  document.getElementById('stbl').innerHTML=tbl+'</tbody>';
+
+  let hm=`<div class="hm-row"><div class="hm-lbl"></div>`;
+  for(let d=1;d<=days;d++) hm+=`<div style="width:15px;font-size:8px;color:#aaa;text-align:center;flex-shrink:0">${d}</div>`;
+  hm+=`</div>`;
+  for(let hi=0;hi<N;hi++){
+    const hc=HC[hi];
+    hm+=`<div class="hm-row"><div class="hm-lbl" style="color:${hc}">${hi+1}. ${esc(S.habits[hi].name)}</div>`;
+    for(let d=1;d<=days;d++){
+      const on=isOn(hi,d);
+      hm+=`<div class="hm-dot" style="background:${on?hc:'#f5f5f5'};border-color:${on?hc:'#e0e0e0'}"></div>`;
+    }
+    hm+=`</div>`;
+  }
+  document.getElementById('hmap').innerHTML=hm;
+}
+
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+buildGrid(); updateKPIs(); buildCircs(); buildPanels();
+</script>
+</body>
+</html>
